@@ -21,11 +21,11 @@ async function loadArt(name) {
   const viewBox = text.match(/viewBox="([^"]+)"/)?.[1];
   const d = text.match(/\sd="([^"]+)"/)?.[1];
   if (!viewBox || !d) {
-    throw new Error(`src/${name}.svg에는 viewBox와 path 하나가 있어야 합니다.`);
+    throw new Error(`src/${name}.svg에는 viewBox와 path 하나가 있어야 해요.`);
   }
   const [minX, minY, width, height] = viewBox.trim().split(/\s+/).map(Number);
   if (width !== height) {
-    throw new Error(`src/${name}.svg의 viewBox는 정사각형이어야 합니다. 지금은 ${width}×${height}입니다.`);
+    throw new Error(`src/${name}.svg의 viewBox는 정사각형이어야 해요(지금 ${width}×${height}).`);
   }
   return { name, viewBox, d, minX, minY, width, height };
 }
@@ -303,10 +303,10 @@ async function check(files) {
   }
   if (problems.length > 0) {
     console.error(problems.join('\n'));
-    console.error('\nsrc/의 원본과 만든 파일이 맞지 않습니다. npm run build로 다시 만들어 함께 커밋해 주세요.');
+    console.error('\nsrc/의 원본과 만든 파일이 맞지 않아요. npm run build로 다시 만들어 함께 커밋해 주세요.');
     process.exit(1);
   }
-  console.log(`파일 ${files.size}개가 src/의 원본과 맞습니다.`);
+  console.log(`파일 ${files.size}개가 src/의 원본과 맞아요.`);
 }
 
 async function build(files) {
@@ -315,7 +315,7 @@ async function build(files) {
     await mkdir(dirname(join(root, path)), { recursive: true });
     await writeFile(join(root, path), content);
   }
-  console.log(`파일 ${files.size}개를 만들었습니다.`);
+  console.log(`파일 ${files.size}개를 만들었어요.`);
 }
 
 const files = await outputs();
