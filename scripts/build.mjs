@@ -9,9 +9,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const checking = process.argv.includes('--check');
 
 const brand = 'gonghunt';
+const yellow = '#FFD43B';
 const ink = '#17171A';
 const paper = '#FFFFFF';
-const colors = { black: ink, white: paper };
+const paints = {
+  color: { fill: yellow, under: ink },
+  black: { fill: ink },
+  white: { fill: paper },
+  yellow: { fill: yellow },
+  currentcolor: { fill: 'currentColor' },
+};
+const variants = {
+  badge: ['color', 'black', 'white'],
+  mark: ['black', 'yellow', 'white'],
+};
 const logoSizes = [16, 32, 48, 64, 128, 256, 512, 1024];
 const generatedDirs = ['logos', 'web', 'social', 'docs'];
 const pixelTolerance = 8;
@@ -30,20 +41,29 @@ async function loadArt(name) {
   return { name, viewBox, d, minX, minY, width, height };
 }
 
-function logoSvg(art, fill) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${art.viewBox}" width="${art.width}" height="${art.height}"><path fill="${fill}" d="${art.d}"/></svg>\n`;
+function artBody(art, paint) {
+  const path = `<path fill="${paint.fill}" d="${art.d}"/>`;
+  if (!paint.under) {
+    return path;
+  }
+  const radius = art.width / 2 - art.width / 512;
+  return `<circle cx="${art.minX + art.width / 2}" cy="${art.minY + art.height / 2}" r="${radius}" fill="${paint.under}"/>${path}`;
 }
 
-function placed(art, { x, y, height, fill }) {
+function logoSvg(art, paint) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${art.viewBox}" width="${art.width}" height="${art.height}">${artBody(art, paint)}</svg>\n`;
+}
+
+function placed(art, { x, y, height, paint }) {
   const scale = height / art.height;
-  return `<path transform="translate(${x} ${y}) scale(${scale}) translate(${-art.minX} ${-art.minY})" fill="${fill}" d="${art.d}"/>`;
+  return `<g transform="translate(${x} ${y}) scale(${scale}) translate(${-art.minX} ${-art.minY})">${artBody(art, paint)}</g>`;
 }
 
-function framedSvg(art, { size, ratio, fill, background }) {
+function framedSvg(art, { size, ratio, paint, background }) {
   const height = (size * ratio * art.height) / Math.max(art.width, art.height);
   const width = (height * art.width) / art.height;
   const back = background ? `<rect width="${size}" height="${size}" fill="${background}"/>` : '';
-  const logo = placed(art, { x: (size - width) / 2, y: (size - height) / 2, height, fill });
+  const logo = placed(art, { x: (size - width) / 2, y: (size - height) / 2, height, paint });
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}">${back}${logo}</svg>`;
 }
 
@@ -81,12 +101,21 @@ function icoImages(buffer) {
   });
 }
 
+const mist = '#F5F5F5';
+const line = '#E5E5E5';
+const muted = '#4F5256';
+const night = '#141517';
+const guide = '#6B4EFF';
+const guideSoft = '#EBE8FF';
+const warn = '#E5484D';
+const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
 function previewSvg(badge, mark) {
-  const panel = (x, background, fill) =>
+  const panel = (x, background, markPaint) =>
     `<rect x="${x}" width="600" height="400" fill="${background}"/>` +
-    placed(badge, { x: x + 60, y: 80, height: 240, fill }) +
-    placed(mark, { x: x + 300, y: 80, height: 240, fill });
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">${panel(0, '#F4F4F1', ink)}${panel(600, ink, paper)}</svg>\n`;
+    placed(badge, { x: x + 60, y: 80, height: 240, paint: paints.color }) +
+    placed(mark, { x: x + 300, y: 80, height: 240, paint: markPaint });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">${panel(0, mist, paints.black)}${panel(600, ink, paints.yellow)}</svg>\n`;
 }
 
 function clearSpaceSvg(badge) {
@@ -98,36 +127,31 @@ function clearSpaceSvg(badge) {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">` +
     `<rect width="${size}" height="${size}" fill="${paper}"/>` +
-    `<rect x="${start}" y="${start}" width="${box}" height="${box}" fill="#FDE7D3"/>` +
-    `<rect x="${start}" y="${start}" width="${box}" height="${box}" fill="none" stroke="#E8590C" stroke-width="2" stroke-dasharray="8 6"/>` +
-    `<rect x="${start}" y="${size / 2 - 1}" width="${space}" height="2" fill="#E8590C"/>` +
-    placed(badge, { x: (size - diameter) / 2, y: (size - diameter) / 2, height: diameter, fill: ink }) +
+    `<rect x="${start}" y="${start}" width="${box}" height="${box}" fill="${guideSoft}"/>` +
+    `<rect x="${start}" y="${start}" width="${box}" height="${box}" fill="none" stroke="${guide}" stroke-width="2" stroke-dasharray="8 6"/>` +
+    `<rect x="${start}" y="${size / 2 - 1}" width="${space}" height="2" fill="${guide}"/>` +
+    placed(badge, { x: (size - diameter) / 2, y: (size - diameter) / 2, height: diameter, paint: paints.color }) +
     `</svg>\n`
   );
 }
-
-const mist = '#F4F4F1';
-const line = '#E2E2DD';
-const muted = '#6B6B70';
-const warn = '#E5484D';
-const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 
 function sheet(width, height, body) {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><rect width="${width}" height="${height}" rx="16" fill="${mist}"/>${body}</svg>\n`;
 }
 
-function centered(art, { cx, cy, height, fill }) {
+function centered(art, { cx, cy, height, paint }) {
   const width = (height * art.width) / art.height;
-  return placed(art, { x: cx - width / 2, y: cy - height / 2, height, fill });
+  return placed(art, { x: cx - width / 2, y: cy - height / 2, height, paint });
 }
 
 function label(x, y, text) {
   return `<text x="${x}" y="${y}" text-anchor="middle" font-family="${mono}" font-size="15" fill="${muted}">${text}</text>`;
 }
 
-function cardSvg(art, color) {
-  const background = color === 'white' ? `<rect width="480" height="300" rx="16" fill="${ink}"/>` : '';
-  return sheet(480, 300, background + centered(art, { cx: 240, cy: 150, height: 200, fill: colors[color] }));
+function cardSvg(art, variant) {
+  const onDark = variant === 'white' || variant === 'yellow';
+  const background = onDark ? `<rect width="480" height="300" rx="16" fill="${ink}"/>` : '';
+  return sheet(480, 300, background + centered(art, { cx: 240, cy: 150, height: 200, paint: paints[variant] }));
 }
 
 function sizesSvg(badge) {
@@ -137,7 +161,7 @@ function sizesSvg(badge) {
   let x = 48;
   let body = '';
   for (const step of steps) {
-    body += placed(badge, { x, y: baseline - step, height: step, fill: ink });
+    body += placed(badge, { x, y: baseline - step, height: step, paint: paints.color });
     body += label(x + step / 2, baseline + 40, step);
     x += step + gap;
   }
@@ -146,51 +170,50 @@ function sizesSvg(badge) {
 
 function webIconsSvg(badge) {
   const appIcon =
-    `<rect x="60" y="40" width="160" height="160" rx="36" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
-    centered(badge, { cx: 140, cy: 120, height: 131, fill: ink });
+    `<rect x="60" y="40" width="160" height="160" rx="36" fill="${ink}"/>` +
+    centered(badge, { cx: 140, cy: 120, height: 131, paint: paints.color });
   const roundIcon =
-    `<circle cx="360" cy="120" r="80" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
-    centered(badge, { cx: 360, cy: 120, height: 128, fill: ink });
+    `<circle cx="360" cy="120" r="80" fill="${ink}"/>` +
+    centered(badge, { cx: 360, cy: 120, height: 128, paint: paints.color });
   const tab =
     `<rect x="480" y="92" width="220" height="56" rx="12" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
-    centered(badge, { cx: 508, cy: 120, height: 16, fill: ink }) +
+    centered(badge, { cx: 508, cy: 120, height: 16, paint: paints.color }) +
     `<rect x="530" y="114" width="96" height="12" rx="6" fill="${line}"/>` +
     `<rect x="672" y="113" width="14" height="14" rx="7" fill="${line}"/>`;
   return sheet(760, 240, appIcon + roundIcon + tab);
 }
 
 function socialSvg(badge) {
-  const avatar = (cx, background, fill, stroke) =>
-    `<circle cx="${cx}" cy="140" r="100" fill="${background}"${stroke ? ` stroke="${line}" stroke-width="2"` : ''}/>` +
-    centered(badge, { cx, cy: 140, height: 144, fill });
-  return sheet(520, 280, avatar(140, paper, ink, true) + avatar(380, ink, paper, false));
+  const avatar = (cx) =>
+    `<circle cx="${cx}" cy="140" r="100" fill="${ink}"/>` + centered(badge, { cx, cy: 140, height: 144, paint: paints.color });
+  return sheet(520, 280, avatar(140) + `<rect x="270" y="20" width="230" height="240" rx="12" fill="${night}"/>` + avatar(385));
 }
 
 function colorsSvg() {
-  const swatch = (x, fill, text, stroke) =>
+  const swatch = (x, fill, stroke) =>
     `<rect x="${x}" y="40" width="200" height="120" rx="12" fill="${fill}"${stroke ? ` stroke="${line}" stroke-width="2"` : ''}/>` +
-    label(x + 100, 192, text);
-  return sheet(520, 220, swatch(40, ink, ink, false) + swatch(280, paper, paper, true));
+    label(x + 100, 192, fill);
+  return sheet(760, 220, swatch(40, yellow, false) + swatch(280, ink, false) + swatch(520, paper, true));
 }
 
 function dontsSvg(badge) {
   const cross = (x) =>
     `<circle cx="${x + 174}" cy="26" r="15" fill="${warn}"/>` +
     `<path d="M${x + 168} 20l12 12M${x + 180} 20l-12 12" stroke="${paper}" stroke-width="3" stroke-linecap="round"/>`;
-  const panel = (index, inner, background) => {
+  const panel = (index, inner, background = paper) => {
     const x = 20 + index * 220;
-    const back = background ? `<rect x="${x}" y="20" width="200" height="200" rx="12" fill="${background}"/>` : `<rect x="${x}" y="20" width="200" height="200" rx="12" fill="${paper}"/>`;
-    return back + inner(x + 100, 120) + cross(x);
+    return `<rect x="${x}" y="20" width="200" height="200" rx="12" fill="${background}"/>` + inner(x + 100, 120) + cross(x);
   };
-  const around = (cx, cy, transform, fill) =>
-    `<g transform="translate(${cx} ${cy}) ${transform} translate(${-cx} ${-cy})">${centered(badge, { cx, cy, height: 120, fill })}</g>`;
+  const around = (cx, cy, transform, paint) =>
+    `<g transform="translate(${cx} ${cy}) ${transform} translate(${-cx} ${-cy})">${centered(badge, { cx, cy, height: 120, paint })}</g>`;
   return sheet(
-    900,
+    1120,
     240,
-    panel(0, (cx, cy) => around(cx, cy, 'scale(1.35 0.8)', ink)) +
-      panel(1, (cx, cy) => around(cx, cy, 'rotate(25)', ink)) +
-      panel(2, (cx, cy) => around(cx, cy, '', '#3B82F6')) +
-      panel(3, (cx, cy) => around(cx, cy, '', ink), '#2B2B30'),
+    panel(0, (cx, cy) => around(cx, cy, 'scale(1.35 0.8)', paints.color)) +
+      panel(1, (cx, cy) => around(cx, cy, 'rotate(25)', paints.color)) +
+      panel(2, (cx, cy) => around(cx, cy, '', { fill: '#3B82F6' })) +
+      panel(3, (cx, cy) => around(cx, cy, '', { fill: ink, under: yellow })) +
+      panel(4, (cx, cy) => around(cx, cy, '', paints.black), '#2B2B30'),
   );
 }
 
@@ -200,7 +223,7 @@ function webManifest() {
     { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
     { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
   ];
-  const manifest = { name: '공모전헌터', short_name: '공모전헌터', icons, theme_color: ink, background_color: paper };
+  const manifest = { name: '공모전헌터', short_name: '공모전헌터', icons, theme_color: ink, background_color: ink };
   return `${JSON.stringify(manifest, null, 2)}\n`;
 }
 
@@ -210,35 +233,33 @@ async function outputs() {
   const files = new Map();
 
   for (const art of [badge, mark]) {
-    for (const [color, fill] of Object.entries(colors)) {
-      const base = `logos/${art.name}/${color}/${brand}-${art.name}-${color}`;
-      const svg = logoSvg(art, fill);
+    for (const variant of variants[art.name]) {
+      const base = `logos/${art.name}/${variant}/${brand}-${art.name}-${variant}`;
+      const svg = logoSvg(art, paints[variant]);
       files.set(`${base}.svg`, svg);
       for (const size of logoSizes) {
         files.set(`${base}-${size}.png`, png(svg, 'width', size));
       }
     }
-    files.set(`logos/${art.name}/currentcolor/${brand}-${art.name}-currentcolor.svg`, logoSvg(art, 'currentColor'));
+    files.set(`logos/${art.name}/currentcolor/${brand}-${art.name}-currentcolor.svg`, logoSvg(art, paints.currentcolor));
   }
 
-  const badgeInk = logoSvg(badge, ink);
-  const themed = `<style>path{fill:${ink}}@media (prefers-color-scheme:dark){path{fill:${paper}}}</style>`;
-  files.set('web/favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${badge.viewBox}">${themed}<path d="${badge.d}"/></svg>\n`);
-  files.set('web/favicon.ico', icoFile([16, 32, 48].map((size) => ({ size, data: png(badgeInk, 'width', size) }))));
-  files.set('web/apple-touch-icon.png', png(framedSvg(badge, { size: 512, ratio: 0.82, fill: ink, background: paper }), 'width', 180));
-  files.set('web/icon-192.png', png(badgeInk, 'width', 192));
-  files.set('web/icon-512.png', png(badgeInk, 'width', 512));
-  files.set('web/icon-maskable-512.png', png(framedSvg(badge, { size: 512, ratio: 0.8, fill: ink, background: paper }), 'width', 512));
+  const badgeColor = logoSvg(badge, paints.color);
+  files.set('web/favicon.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${badge.viewBox}">${artBody(badge, paints.color)}</svg>\n`);
+  files.set('web/favicon.ico', icoFile([16, 32, 48].map((size) => ({ size, data: png(badgeColor, 'width', size) }))));
+  files.set('web/apple-touch-icon.png', png(framedSvg(badge, { size: 512, ratio: 0.82, paint: paints.color, background: ink }), 'width', 180));
+  files.set('web/icon-192.png', png(badgeColor, 'width', 192));
+  files.set('web/icon-512.png', png(badgeColor, 'width', 512));
+  files.set('web/icon-maskable-512.png', png(framedSvg(badge, { size: 512, ratio: 0.8, paint: paints.color, background: ink }), 'width', 512));
   files.set('web/site.webmanifest', webManifest());
 
-  files.set(`social/${brand}-avatar-light.png`, png(framedSvg(badge, { size: 1024, ratio: 0.72, fill: ink, background: paper }), 'width', 1024));
-  files.set(`social/${brand}-avatar-dark.png`, png(framedSvg(badge, { size: 1024, ratio: 0.72, fill: paper, background: ink }), 'width', 1024));
+  files.set(`social/${brand}-avatar.png`, png(framedSvg(badge, { size: 1024, ratio: 0.72, paint: paints.color, background: ink }), 'width', 1024));
 
   files.set('docs/preview.svg', previewSvg(badge, mark));
   files.set('docs/clear-space.svg', clearSpaceSvg(badge));
   for (const art of [badge, mark]) {
-    for (const color of Object.keys(colors)) {
-      files.set(`docs/cards/${art.name}-${color}.svg`, cardSvg(art, color));
+    for (const variant of variants[art.name]) {
+      files.set(`docs/cards/${art.name}-${variant}.svg`, cardSvg(art, variant));
     }
   }
   files.set('docs/sizes.svg', sizesSvg(badge));
