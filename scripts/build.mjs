@@ -104,6 +104,94 @@ function clearSpaceSvg(badge) {
   );
 }
 
+const mist = '#F4F4F1';
+const line = '#E2E2DD';
+const muted = '#6B6B70';
+const warn = '#E5484D';
+const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+
+function sheet(width, height, body) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"><rect width="${width}" height="${height}" rx="16" fill="${mist}"/>${body}</svg>\n`;
+}
+
+function centered(art, { cx, cy, height, fill }) {
+  const width = (height * art.width) / art.height;
+  return placed(art, { x: cx - width / 2, y: cy - height / 2, height, fill });
+}
+
+function label(x, y, text) {
+  return `<text x="${x}" y="${y}" text-anchor="middle" font-family="${mono}" font-size="15" fill="${muted}">${text}</text>`;
+}
+
+function cardSvg(art, color) {
+  const background = color === 'white' ? `<rect width="480" height="300" rx="16" fill="${ink}"/>` : '';
+  return sheet(480, 300, background + centered(art, { cx: 240, cy: 150, height: 200, fill: colors[color] }));
+}
+
+function sizesSvg(badge) {
+  const steps = [128, 64, 48, 32, 24, 16];
+  const gap = 44;
+  const baseline = 168;
+  let x = 48;
+  let body = '';
+  for (const step of steps) {
+    body += placed(badge, { x, y: baseline - step, height: step, fill: ink });
+    body += label(x + step / 2, baseline + 40, step);
+    x += step + gap;
+  }
+  return sheet(x + 4, 240, body);
+}
+
+function webIconsSvg(badge) {
+  const appIcon =
+    `<rect x="60" y="40" width="160" height="160" rx="36" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
+    centered(badge, { cx: 140, cy: 120, height: 131, fill: ink });
+  const roundIcon =
+    `<circle cx="360" cy="120" r="80" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
+    centered(badge, { cx: 360, cy: 120, height: 128, fill: ink });
+  const tab =
+    `<rect x="480" y="92" width="220" height="56" rx="12" fill="${paper}" stroke="${line}" stroke-width="2"/>` +
+    centered(badge, { cx: 508, cy: 120, height: 16, fill: ink }) +
+    `<rect x="530" y="114" width="96" height="12" rx="6" fill="${line}"/>` +
+    `<rect x="672" y="113" width="14" height="14" rx="7" fill="${line}"/>`;
+  return sheet(760, 240, appIcon + roundIcon + tab);
+}
+
+function socialSvg(badge) {
+  const avatar = (cx, background, fill, stroke) =>
+    `<circle cx="${cx}" cy="140" r="100" fill="${background}"${stroke ? ` stroke="${line}" stroke-width="2"` : ''}/>` +
+    centered(badge, { cx, cy: 140, height: 144, fill });
+  return sheet(520, 280, avatar(140, paper, ink, true) + avatar(380, ink, paper, false));
+}
+
+function colorsSvg() {
+  const swatch = (x, fill, text, stroke) =>
+    `<rect x="${x}" y="40" width="200" height="120" rx="12" fill="${fill}"${stroke ? ` stroke="${line}" stroke-width="2"` : ''}/>` +
+    label(x + 100, 192, text);
+  return sheet(520, 220, swatch(40, ink, ink, false) + swatch(280, paper, paper, true));
+}
+
+function dontsSvg(badge) {
+  const cross = (x) =>
+    `<circle cx="${x + 174}" cy="26" r="15" fill="${warn}"/>` +
+    `<path d="M${x + 168} 20l12 12M${x + 180} 20l-12 12" stroke="${paper}" stroke-width="3" stroke-linecap="round"/>`;
+  const panel = (index, inner, background) => {
+    const x = 20 + index * 220;
+    const back = background ? `<rect x="${x}" y="20" width="200" height="200" rx="12" fill="${background}"/>` : `<rect x="${x}" y="20" width="200" height="200" rx="12" fill="${paper}"/>`;
+    return back + inner(x + 100, 120) + cross(x);
+  };
+  const around = (cx, cy, transform, fill) =>
+    `<g transform="translate(${cx} ${cy}) ${transform} translate(${-cx} ${-cy})">${centered(badge, { cx, cy, height: 120, fill })}</g>`;
+  return sheet(
+    900,
+    240,
+    panel(0, (cx, cy) => around(cx, cy, 'scale(1.35 0.8)', ink)) +
+      panel(1, (cx, cy) => around(cx, cy, 'rotate(25)', ink)) +
+      panel(2, (cx, cy) => around(cx, cy, '', '#3B82F6')) +
+      panel(3, (cx, cy) => around(cx, cy, '', ink), '#2B2B30'),
+  );
+}
+
 function webManifest() {
   const icons = [
     { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -147,6 +235,16 @@ async function outputs() {
 
   files.set('docs/preview.svg', previewSvg(badge, mark));
   files.set('docs/clear-space.svg', clearSpaceSvg(badge));
+  for (const art of [badge, mark]) {
+    for (const color of Object.keys(colors)) {
+      files.set(`docs/cards/${art.name}-${color}.svg`, cardSvg(art, color));
+    }
+  }
+  files.set('docs/sizes.svg', sizesSvg(badge));
+  files.set('docs/web-icons.svg', webIconsSvg(badge));
+  files.set('docs/social.svg', socialSvg(badge));
+  files.set('docs/colors.svg', colorsSvg());
+  files.set('docs/donts.svg', dontsSvg(badge));
   return files;
 }
 
