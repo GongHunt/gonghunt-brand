@@ -12,8 +12,7 @@ const brand = 'gonghunt';
 const ink = '#17171A';
 const paper = '#FFFFFF';
 const colors = { black: ink, white: paper };
-const badgeSizes = [16, 32, 48, 64, 128, 256, 512, 1024];
-const markHeights = [128, 256, 512, 1024];
+const logoSizes = [16, 32, 48, 64, 128, 256, 512, 1024];
 const generatedDirs = ['logos', 'web', 'social', 'docs'];
 const pixelTolerance = 8;
 
@@ -25,6 +24,9 @@ async function loadArt(name) {
     throw new Error(`src/${name}.svg에는 viewBox와 path 하나가 있어야 합니다.`);
   }
   const [minX, minY, width, height] = viewBox.trim().split(/\s+/).map(Number);
+  if (width !== height) {
+    throw new Error(`src/${name}.svg의 viewBox는 정사각형이어야 합니다. 지금은 ${width}×${height}입니다.`);
+  }
   return { name, viewBox, d, minX, minY, width, height };
 }
 
@@ -82,8 +84,8 @@ function icoImages(buffer) {
 function previewSvg(badge, mark) {
   const panel = (x, background, fill) =>
     `<rect x="${x}" width="600" height="400" fill="${background}"/>` +
-    placed(badge, { x: x + 90, y: 80, height: 240, fill }) +
-    placed(mark, { x: x + 400, y: 80, height: 240, fill });
+    placed(badge, { x: x + 60, y: 80, height: 240, fill }) +
+    placed(mark, { x: x + 300, y: 80, height: 240, fill });
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">${panel(0, '#F4F4F1', ink)}${panel(600, ink, paper)}</svg>\n`;
 }
 
@@ -212,9 +214,8 @@ async function outputs() {
       const base = `logos/${art.name}/${color}/${brand}-${art.name}-${color}`;
       const svg = logoSvg(art, fill);
       files.set(`${base}.svg`, svg);
-      const steps = art === badge ? badgeSizes : markHeights;
-      for (const step of steps) {
-        files.set(`${base}-${step}.png`, png(svg, art === badge ? 'width' : 'height', step));
+      for (const size of logoSizes) {
+        files.set(`${base}-${size}.png`, png(svg, 'width', size));
       }
     }
     files.set(`logos/${art.name}/currentcolor/${brand}-${art.name}-currentcolor.svg`, logoSvg(art, 'currentColor'));
