@@ -1,0 +1,16 @@
+{
+  "name": "gonghunt-brand",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs --check"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "pngjs": "7.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
