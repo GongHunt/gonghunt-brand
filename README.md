@@ -67,6 +67,25 @@
 
 ![늘이기, 돌리기, 다른 색 칠하기, 원판과 뿔 색 뒤바꾸기, 어두운 바탕에 검정 단색 배지 올리기](docs/donts.svg)
 
+## 마스코트 노랑이
+
+<table>
+  <tr>
+    <td><a href="mascot/basic"><img src="docs/cards/mascot-basic.svg" width="260" alt="노랑 세 겹 몸에 검정 뿔 두 개를 단 노랑이"></a></td>
+    <td><a href="mascot/raincoat"><img src="docs/cards/mascot-raincoat.svg" width="260" alt="노랑 우비를 입고 장화를 신은 노랑이"></a></td>
+    <td><a href="mascot/fur-hood"><img src="docs/cards/mascot-fur-hood.svg" width="260" alt="크림색 털이 둘린 남색 후드 패딩을 입은 노랑이"></a></td>
+  </tr>
+  <tr>
+    <td align="center">기본<br><a href="mascot/basic/gonghunt-mascot-basic.svg">SVG</a> | <a href="mascot/basic">PNG</a></td>
+    <td align="center">우비<br><a href="mascot/raincoat/gonghunt-mascot-raincoat.svg">SVG</a> | <a href="mascot/raincoat">PNG</a></td>
+    <td align="center">털 후드<br><a href="mascot/fur-hood/gonghunt-mascot-fur-hood.svg">SVG</a> | <a href="mascot/fur-hood">PNG</a></td>
+  </tr>
+</table>
+
+밝은 바탕에 써요. 어두운 바탕에서는 검정 뿔이 묻혀요.
+
+제스처, 움직이는 GIF, 다른 색 코스튬은 [마스코트 캔버스](https://claude.ai/artifact/HkuY4VEbqhKuBmyxhjLSSR)에서 봐요. 캔버스는 팀원만 열 수 있어요.
+
 ---
 
 [로고 사용 안내](LICENSE.md) | [파일 고치는 법](CONTRIBUTING.md)
