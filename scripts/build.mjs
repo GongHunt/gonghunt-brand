@@ -24,7 +24,9 @@ const variants = {
   mark: ['black', 'yellow', 'white'],
 };
 const logoSizes = [16, 32, 48, 64, 128, 256, 512, 1024];
-const generatedDirs = ['logos', 'web', 'social', 'docs'];
+const mascots = ['basic', 'raincoat', 'fur-hood'];
+const mascotSizes = [256, 512, 1024];
+const generatedDirs = ['logos', 'mascot', 'web', 'social', 'docs'];
 const pixelTolerance = 8;
 
 async function loadArt(name) {
@@ -39,6 +41,23 @@ async function loadArt(name) {
     throw new Error(`src/${name}.svg의 viewBox는 정사각형이어야 해요(지금 ${width}×${height}).`);
   }
   return { name, viewBox, d, minX, minY, width, height };
+}
+
+async function loadMascot(name) {
+  const text = await readFile(join(root, 'src', 'mascot', `${name}.svg`), 'utf8');
+  const open = text.match(/<svg\b[^>]*>/)?.[0];
+  const viewBox = open?.match(/viewBox="([^"]+)"/)?.[1];
+  if (!open || !viewBox) {
+    throw new Error(`src/mascot/${name}.svg에는 viewBox가 있는 svg 태그가 있어야 해요.`);
+  }
+  const [, , width, height] = viewBox.trim().split(/\s+/).map(Number);
+  const inner = text.slice(text.indexOf(open) + open.length, text.lastIndexOf('</svg>'));
+  return { name, text: `${text.trimEnd()}\n`, viewBox, width, height, inner };
+}
+
+function nestedMascot(mascot, { cx, cy, height }) {
+  const width = (height * mascot.width) / mascot.height;
+  return `<svg x="${cx - width / 2}" y="${cy - height / 2}" width="${width}" height="${height}" viewBox="${mascot.viewBox}">${mascot.inner}</svg>`;
 }
 
 function artBody(art, paint) {
@@ -154,6 +173,10 @@ function cardSvg(art, variant) {
   return sheet(480, 300, background + centered(art, { cx: 240, cy: 150, height: 200, paint: paints[variant] }));
 }
 
+function mascotCardSvg(mascot) {
+  return sheet(480, 360, nestedMascot(mascot, { cx: 240, cy: 180, height: 320 }));
+}
+
 function sizesSvg(badge) {
   const steps = [128, 64, 48, 32, 24, 16];
   const gap = 44;
@@ -242,6 +265,16 @@ async function outputs() {
       }
     }
     files.set(`logos/${art.name}/currentcolor/${brand}-${art.name}-currentcolor.svg`, logoSvg(art, paints.currentcolor));
+  }
+
+  for (const name of mascots) {
+    const mascot = await loadMascot(name);
+    const base = `mascot/${name}/${brand}-mascot-${name}`;
+    files.set(`${base}.svg`, mascot.text);
+    for (const size of mascotSizes) {
+      files.set(`${base}-${size}.png`, png(mascot.text, 'width', size));
+    }
+    files.set(`docs/cards/mascot-${name}.svg`, mascotCardSvg(mascot));
   }
 
   const badgeColor = logoSvg(badge, paints.color);
